@@ -1,5 +1,5 @@
 import logging
-from abd import ABC, abstractmethod
+from abc import ABC, abstractmethod
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
@@ -85,7 +85,7 @@ class DataCleaning():
 
 if __name__ == '__main__':
     data = pd.read_csv('data/olist_customers_dataset.csv')
-    data_cleaning = DataCleaning(data, DataPreProcessStrategy()):
+    data_cleaning = DataCleaning(data, DataPreProcessStrategy())
     data_cleaning.handle_data()
 
 

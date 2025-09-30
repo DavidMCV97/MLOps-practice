@@ -1,13 +1,43 @@
 import logging
 from zenml import step
 import pandas as pd
+from src.evaluation import MSE, R2Score, RMSE
+from sklearn.base import RegressorMixin
+from typing import Tuple
+from typing_extensions import Annotated
+from zenml.client import Client
+import mlflow
 
-@step
-def evaluate_model(df:pd.DataFrame) -> None:
-    '''
-    Evaluates the model on the ingested data
+experiment_tracker = Client().active_stack.experiment_tracker
 
-    Args:
-       df: ingested data 
-    '''
-    pass
+@step(experiment_tracker=experiment_tracker.name)
+def evaluate_model(
+   model:RegressorMixin,
+   X_test:pd.DataFrame,
+   y_test:pd.Series
+) -> Tuple[
+   Annotated[float, "MSE"],
+   Annotated[float, "R2"],
+   Annotated[float, "RMSE"]]:
+   '''
+   Evaluates the model on the ingested data
+
+   Args:
+      df: ingested data 
+   '''
+   try:
+      predictions = model.predict(X_test)
+      mse_class = MSE()
+      mse = mse_class.calculate_scores(y_test, predictions)
+      mlflow.log_metric("mse", mse)
+      r2_class = R2Score()
+      r2 = r2_class.calculate_scores(y_test, predictions)
+      mlflow.log_metric("r2", r2)
+      rmse_class = RMSE()
+      rmse = rmse_class.calculate_scores(y_test, predictions)
+      mlflow.log_metric("rmse", rmse)
+      logging.info(f'Evaluation Results - MSE: {mse}, R2: {r2}, RMSE: {rmse}')
+      return mse, r2, rmse
+   except Exception as e:
+      logging.error('Error in evaluating model: {}'.format(e))
+      raise e
